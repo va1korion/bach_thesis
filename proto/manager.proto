@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "/";
+option go_package = "api/";
 
 package manager;
 
@@ -14,24 +14,29 @@ service Manager{
   rpc GetVideo (Source) returns (stream Result){}
 }
 
+// Video over hls from client
 message Video{
   bytes m3u8 = 1;
   bytes ts = 2;
 }
 
+// video over hls from worker
 message Result{
   bytes m3u8 = 1;
   bytes ts = 2;
 }
 
+// filename or uri to find video from
 message Source{
   string filename = 1;
 }
 
+// workers uid
 message Worker{
   string uid = 1;
 }
 
+// workers current status. shown to the user
 message Status{
   string status = 1;
 }
