@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option go_package = "/go_api";
+
+package worker;
+
+service Worker_gRPC{
+  // gets worker status
+  rpc GetStatus (Request) returns (Status){}
+  // streams from client for nn purposes
+  // rpc StreamTS (stream Video) returns (stream Result){}
+
+  // streams from elsewhere, still gets video (frames?) after nn
+  // Source is either ip (of a camera) or dir
+  rpc GetVideo (Source) returns (stream Result){}
+
+  // or restreams it into the sink
+  rpc RestreamVideo (Source) returns (Source){}
+}
+
+message Request{
+  int32 ts = 1;
+}
+
+message Video{
+  bytes m3u8 = 1;
+  bytes ts = 2;
+}
+
+message Result{
+  bytes frame = 1;
+}
+
+message Source{
+  string uri = 1;
+}
+
+
+message Status{
+  string status = 1;
+}

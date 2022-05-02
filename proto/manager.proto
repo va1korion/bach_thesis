@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "/go_api";
+
+package manager;
+
+service Manager{
+  // gets workers status
+  rpc GetStatus (Client) returns (stream Worker){}
+
+  // joins new worker
+  rpc Join (Worker) returns (JoinResponse){}
+
+  // logs work
+  // rpc Log (stream Worker) returns (LogResponse){}
+}
+
+message Client{
+  string uid = 1;
+}
+message JoinResponse{
+  string name = 1;
+}
+
+message LogResponse{
+  string name = 1;
+}
+
+message Worker{
+  string uri = 1;
+  repeated string tasks = 2;
+}
+

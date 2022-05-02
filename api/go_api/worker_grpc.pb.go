@@ -4,7 +4,7 @@
 // - protoc             v3.19.4
 // source: proto/worker.proto
 
-package api
+package go_api
 
 import (
 	context "context"
@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerGRPCClient interface {
 	// gets worker status
-	GetStatus(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
+	GetStatus(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Status, error)
 	// streams from elsewhere, still gets video (frames?) after nn
 	// Source is either ip (of a camera) or dir
 	GetVideo(ctx context.Context, in *Source, opts ...grpc.CallOption) (WorkerGRPC_GetVideoClient, error)
@@ -39,7 +39,7 @@ func NewWorkerGRPCClient(cc grpc.ClientConnInterface) WorkerGRPCClient {
 	return &workerGRPCClient{cc}
 }
 
-func (c *workerGRPCClient) GetStatus(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error) {
+func (c *workerGRPCClient) GetStatus(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Status, error) {
 	out := new(Status)
 	err := c.cc.Invoke(ctx, "/worker.Worker_gRPC/GetStatus", in, out, opts...)
 	if err != nil {
@@ -94,7 +94,7 @@ func (c *workerGRPCClient) RestreamVideo(ctx context.Context, in *Source, opts .
 // for forward compatibility
 type WorkerGRPCServer interface {
 	// gets worker status
-	GetStatus(context.Context, *Worker) (*Status, error)
+	GetStatus(context.Context, *Request) (*Status, error)
 	// streams from elsewhere, still gets video (frames?) after nn
 	// Source is either ip (of a camera) or dir
 	GetVideo(*Source, WorkerGRPC_GetVideoServer) error
@@ -107,7 +107,7 @@ type WorkerGRPCServer interface {
 type UnimplementedWorkerGRPCServer struct {
 }
 
-func (UnimplementedWorkerGRPCServer) GetStatus(context.Context, *Worker) (*Status, error) {
+func (UnimplementedWorkerGRPCServer) GetStatus(context.Context, *Request) (*Status, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
 func (UnimplementedWorkerGRPCServer) GetVideo(*Source, WorkerGRPC_GetVideoServer) error {
@@ -130,7 +130,7 @@ func RegisterWorkerGRPCServer(s grpc.ServiceRegistrar, srv WorkerGRPCServer) {
 }
 
 func _WorkerGRPC_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Worker)
+	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func _WorkerGRPC_GetStatus_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: "/worker.Worker_gRPC/GetStatus",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerGRPCServer).GetStatus(ctx, req.(*Worker))
+		return srv.(WorkerGRPCServer).GetStatus(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }

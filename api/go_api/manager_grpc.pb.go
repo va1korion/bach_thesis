@@ -4,7 +4,7 @@
 // - protoc             v3.19.4
 // source: proto/manager.proto
 
-package api
+package go_api
 
 import (
 	context "context"
