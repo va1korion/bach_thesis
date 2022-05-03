@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerClient interface {
 	// gets workers status
-	GetStatus(ctx context.Context, in *Client, opts ...grpc.CallOption) (Manager_GetStatusClient, error)
+	GetStatus(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Workers, error)
 	// joins new worker
 	Join(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*JoinResponse, error)
 }
@@ -36,36 +36,13 @@ func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
 	return &managerClient{cc}
 }
 
-func (c *managerClient) GetStatus(ctx context.Context, in *Client, opts ...grpc.CallOption) (Manager_GetStatusClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Manager_ServiceDesc.Streams[0], "/manager.Manager/GetStatus", opts...)
+func (c *managerClient) GetStatus(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Workers, error) {
+	out := new(Workers)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &managerGetStatusClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Manager_GetStatusClient interface {
-	Recv() (*Worker, error)
-	grpc.ClientStream
-}
-
-type managerGetStatusClient struct {
-	grpc.ClientStream
-}
-
-func (x *managerGetStatusClient) Recv() (*Worker, error) {
-	m := new(Worker)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 func (c *managerClient) Join(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*JoinResponse, error) {
@@ -82,7 +59,7 @@ func (c *managerClient) Join(ctx context.Context, in *Worker, opts ...grpc.CallO
 // for forward compatibility
 type ManagerServer interface {
 	// gets workers status
-	GetStatus(*Client, Manager_GetStatusServer) error
+	GetStatus(context.Context, *Client) (*Workers, error)
 	// joins new worker
 	Join(context.Context, *Worker) (*JoinResponse, error)
 	mustEmbedUnimplementedManagerServer()
@@ -92,8 +69,8 @@ type ManagerServer interface {
 type UnimplementedManagerServer struct {
 }
 
-func (UnimplementedManagerServer) GetStatus(*Client, Manager_GetStatusServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
+func (UnimplementedManagerServer) GetStatus(context.Context, *Client) (*Workers, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
 func (UnimplementedManagerServer) Join(context.Context, *Worker) (*JoinResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
@@ -111,25 +88,22 @@ func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
 	s.RegisterService(&Manager_ServiceDesc, srv)
 }
 
-func _Manager_GetStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Client)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Manager_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Client)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(ManagerServer).GetStatus(m, &managerGetStatusServer{stream})
-}
-
-type Manager_GetStatusServer interface {
-	Send(*Worker) error
-	grpc.ServerStream
-}
-
-type managerGetStatusServer struct {
-	grpc.ServerStream
-}
-
-func (x *managerGetStatusServer) Send(m *Worker) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(ManagerServer).GetStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/manager.Manager/GetStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServer).GetStatus(ctx, req.(*Client))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Manager_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -158,16 +132,14 @@ var Manager_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetStatus",
+			Handler:    _Manager_GetStatus_Handler,
+		},
+		{
 			MethodName: "Join",
 			Handler:    _Manager_Join_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "GetStatus",
-			Handler:       _Manager_GetStatus_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/manager.proto",
 }

@@ -6,13 +6,13 @@ package manager;
 
 service Manager{
   // gets workers status
-  rpc GetStatus (Client) returns (stream Worker){}
+  rpc GetStatus (Client) returns (Workers){}
 
   // joins new worker
   rpc Join (Worker) returns (JoinResponse){}
 
   // logs work
-  // rpc Log (stream Worker) returns (LogResponse){}
+  // rpc Log (stream Task) returns (LogResponse){}
 }
 
 message Client{
@@ -24,6 +24,10 @@ message JoinResponse{
 
 message LogResponse{
   string name = 1;
+}
+
+message Workers{
+  repeated Worker response = 1;
 }
 
 message Worker{
